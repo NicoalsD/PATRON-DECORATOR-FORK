@@ -21,4 +21,6 @@ public class QuoteController {
         return ResponseEntity.ok().header("Content-Disposition", "attachment; filename=\"celsius-cotizacion.json\"").body(quote);
     }
     @PostMapping("/quotes") public QuoteResponse quote(@RequestBody QuoteRequest request) { return service.calculate(request); }
+    @GetMapping("/templates") public List<TemplateOption> templates() { return service.templates(); }
+    @PostMapping("/quotes/compare") public List<DestinationQuote> compare(@RequestBody QuoteRequest request) { return service.compareDestinations(request); }
 }

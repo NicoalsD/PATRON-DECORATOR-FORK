@@ -36,6 +36,7 @@ function applyProfileRates() {
   Object.entries(rates).forEach(([id,rate])=>{const option=form.querySelector(`input[name=services][value=${id}]`)?.closest('.service-option');if(option&&rate)option.querySelector('.service-rate').textContent=rate;});
 }
 function changed() {
+  $('compare-result').hidden=true;
   dirty=true;$('download').disabled=true;$('print').disabled=true;$('quote-status').textContent=latest?'Cambios pendientes · vuelve a calcular':'Listo para calcular';$('quote-status').classList.add('dirty');$('form-error').hidden=true;renderLayers();
 }
 function showResult(data) {
@@ -65,8 +66,8 @@ form.addEventListener('change',event=>{
 });
 form.addEventListener('input',event=>{if(event.target.type==='number'){$('preset').value='custom';changed();}});
 $('preset').addEventListener('change',()=>{
- const presets={vaccines:{origin:'Bogotá',destination:'Medellín',weight:2,value:1500000,profile:'refrigerated',services:['cold','monitor']},lab:{origin:'Cali',destination:'Barranquilla',weight:1.5,value:2500000,profile:'frozen',services:['cold','monitor','custody','insurance','priority']},base:{origin:'Bogotá',destination:'Cali',weight:3,value:500000,profile:'refrigerated',services:[]}};
- const preset=presets[$('preset').value];if(!preset)return;
+ const option=$('preset').selectedOptions[0];if(!option||option.value==='custom')return;
+ const preset={...option.dataset,services:option.dataset.services?option.dataset.services.split(','):[]};
  ['origin','destination','weight','value','profile'].forEach(key=>$(key).value=preset[key]);applyProfileRates();selected.splice(0,selected.length,...preset.services);form.querySelectorAll('input[name=services]').forEach(input=>input.checked=selected.includes(input.value));changed();calculate();
 });
 $('download').addEventListener('click',()=>{
@@ -76,4 +77,17 @@ $('download').addEventListener('click',()=>{
  window.location.assign('/api/quotes/export?'+params.toString());
 });
 $('print').addEventListener('click',()=>{if(!dirty&&latest)window.print();});
+$('compare').addEventListener('click',async()=>{
+ if(busy||!form.reportValidity())return;
+ const host=$('compare-result');const button=$('compare');button.disabled=true;$('form-error').hidden=true;
+ const request={origin:$('origin').value,destination:$('destination').value,weightKg:Number($('weight').value),declaredValue:Number($('value').value),services:[...selected],profile:$('profile').value};
+ try{
+  const response=await fetch('/api/quotes/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(10000)});
+  const data=await response.json();if(!response.ok)throw new Error(data.message||'No se pudo comparar. Revisa los datos.');
+  host.replaceChildren(node('div',`Desde ${request.origin} · mismo envío`,'currency'));
+  data.forEach(row=>{const line=node('div',undefined,'quote-line');line.append(node('span',`${row.destination}${row.current?' (actual)':''} · ${row.deliveryHours} h`),node('span',money(row.total)));host.append(line);});
+  host.hidden=false;
+ }catch(error){host.hidden=true;$('form-error').textContent=error.name==='TimeoutError'?'El servidor tardó demasiado. Vuelve a intentarlo.':error.message==='Failed to fetch'?'No hay conexión con el servidor Java.':error.message;$('form-error').hidden=false;}
+ finally{button.disabled=false;}
+});
 applyProfileRates();renderLayers();calculate();

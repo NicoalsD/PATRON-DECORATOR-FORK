@@ -59,6 +59,14 @@ Errores de validación y JSON ilegible retornan HTTP 400:
 {"message":"El origen y el destino deben ser diferentes."}
 ```
 
+### GET `/api/templates`
+
+Escenarios de ejemplo (`id`, `name`, `origin`, `destination`, `weightKg`, `declaredValue`, `profile`, `services`). `TemplateRegistry` los guarda como prototipos y entrega copias.
+
+### POST `/api/quotes/compare`
+
+Mismo cuerpo que `/api/quotes`. Clona el envío (Prototype) para cada ciudad distinta del origen y devuelve `destination`, `total`, `deliveryHours` y `current`. Detalle en [NUEVA_FUNCION.md](NUEVA_FUNCION.md).
+
 ### GET `/api/quotes/export`
 
 Recibe `origin`, `destination`, `weightKg`, `declaredValue`, `profile` opcional y parámetros `services` repetidos en el orden de composición. Usa el mismo servicio de Java que la cotización y entrega JSON con `Content-Disposition: attachment; filename="celsius-cotizacion.json"`.

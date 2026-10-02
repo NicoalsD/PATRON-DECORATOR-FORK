@@ -116,6 +116,9 @@ Cada decorador obtiene la cotización interior con `super.quote()` (que delega e
 
 Decorator resuelve *qué* responsabilidades tiene el envío. Los patrones creacionales resuelven *cómo* se crean los objetos que participan en él.
 
+- Detalle de clases, archivos y roles de cada patrón: [docs/PATRONES_CREACIONALES.md](docs/PATRONES_CREACIONALES.md).
+- Nueva función (perfil térmico y comparación de destinos): [docs/NUEVA_FUNCION.md](docs/NUEVA_FUNCION.md).
+
 ### Builder
 
 | Rol | Implementación | Responsabilidad |
@@ -150,6 +153,21 @@ Nueva función: el usuario elige el **perfil térmico** de la carga. Cada perfil
 | `ambient` | $9.000 + $600/kg | $7.000 |
 
 `CargoProfiles.byId()` elige la fábrica; sin perfil se usa `refrigerated`, que conserva las tarifas originales.
+
+### Prototype: escenarios y comparación de destinos
+
+| Rol | Implementación |
+|---|---|
+| Prototype | `domain/prototype/Prototype` (`T copy()`) |
+| ConcretePrototype | `domain/prototype/ShipmentTemplate`: configuración completa del envío, copia profunda |
+| Registro de prototipos | `domain/prototype/TemplateRegistry`: guarda los escenarios y entrega siempre copias |
+| Clientes | `QuoteService.templates()` (selector de escenarios) y `QuoteService.compareDestinations()` |
+
+Nueva función **Comparar destinos**: el botón clona el envío actual una vez por ciudad, cambia solo el destino y cotiza cada copia (`POST /api/quotes/compare`). Los escenarios del selector ya no están fijos en el JavaScript: salen del registro (`GET /api/templates`).
+
+```java
+ShipmentTemplate clone = prototype.copy().destination("Cali");   // el prototipo no cambia
+```
 
 ## Reglas del simulador
 
@@ -188,6 +206,8 @@ PATRON DECORATOR/
 ├── docs/
 │   ├── CASO_ESTUDIO.md         Problema, alcance y justificación
 │   ├── ARQUITECTURA.md         Flujo, responsabilidades y API
+│   ├── PATRONES_CREACIONALES.md Dónde están Builder, Abstract Factory y Prototype
+│   ├── NUEVA_FUNCION.md        Perfil térmico y comparación de destinos
 │   ├── GUIA_EXPOSICION.md      Guion y demostraciones para el taller
 │   └── VALIDACION.md           Evidencia de compilación y comprobaciones
 ├── deploy/elastic-beanstalk/  Procfile para AWS Elastic Beanstalk
@@ -196,7 +216,8 @@ PATRON DECORATOR/
 │   ├── domain/                Contrato, base y valores inmutables
 │   │   ├── decorator/         Decorador abstracto y cinco concretos
 │   │   ├── builder/           Builder y Director del envío compuesto
-│   │   └── profile/           Abstract Factory de perfiles térmicos
+│   │   ├── profile/           Abstract Factory de perfiles térmicos
+│   │   └── prototype/         Prototype: plantillas de envío y registro
 │   ├── application/           Catálogo, DTOs y composición
 │   └── web/                   Controladores MVC/REST y errores
 ├── src/main/resources/

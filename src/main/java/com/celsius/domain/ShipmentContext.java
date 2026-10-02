@@ -1,10 +1,12 @@
 package com.celsius.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Set;
 
 public record ShipmentContext(String origin, String destination, BigDecimal weightKg, BigDecimal declaredValue) {
-    public static final Set<String> CITIES = Set.of("Bogotá", "Medellín", "Cali", "Barranquilla");
+    public static final List<String> CITY_ORDER = List.of("Bogotá", "Medellín", "Cali", "Barranquilla");
+    public static final Set<String> CITIES = Set.copyOf(CITY_ORDER);
     public ShipmentContext {
         if (!CITIES.contains(origin == null ? "" : origin) || !CITIES.contains(destination == null ? "" : destination))
             throw new IllegalArgumentException("Selecciona ciudades del catálogo.");
