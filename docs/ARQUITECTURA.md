@@ -24,7 +24,7 @@ flowchart LR
 
 `ShipmentContext` valida ciudades, rutas, peso y valor. Las ciudades disponibles son Bogotá, Medellín, Cali y Barranquilla. Se rechaza una ruta con origen igual a destino. Peso permitido: 0,1–25 kg; valor: $10.000–$20.000.000, con hasta dos decimales.
 
-Los decoradores comparten `ShipmentDecorator.wrapped`. En cada `quote()`, delegan primero y agregan una responsabilidad. El cliente depende de `Shipment`, no de una combinación concreta de clases.
+Los decoradores comparten `ShipmentDecorator.wrapped`. La clase abstracta implementa `quote()` delegando en el componente envuelto; cada decorador concreto llama primero a `super.quote()` y luego agrega su responsabilidad. El nombre de clase que aparece en el desglose sale de `getClass().getSimpleName()`. El cliente depende de `Shipment`, no de una combinación concreta de clases.
 
 ## API
 

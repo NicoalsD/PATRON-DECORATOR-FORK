@@ -59,7 +59,7 @@ Los cambios pendientes se señalan y desactivan descarga e impresión hasta reca
 |---|---|---|
 | Component | `Shipment` | Define `Quote quote()` para bases y envolturas. |
 | Concrete Component | `StandardShipment` | Cotiza el transporte interurbano. |
-| Decorator | `ShipmentDecorator` | Implementa `Shipment` y conserva `Shipment wrapped`. |
+| Decorator | `ShipmentDecorator` | Implementa `Shipment`, conserva `Shipment wrapped` y delega `quote()` en él por defecto. |
 | Concrete Decorators | Cinco clases en `domain/decorator` | Delegan al componente interior y enriquecen su cotización. |
 | Cliente/composición | `QuoteService` | Construye la cadena según la selección; no calcula recargos. |
 
@@ -72,7 +72,7 @@ shipment = new TemperatureMonitorDecorator(shipment);
 Quote result = shipment.quote();
 ```
 
-Cada decorador obtiene `wrapped.quote()` y devuelve una nueva `Quote`. No altera el componente envuelto. `Quote` y sus listas son inmutables. El mismo contrato funciona sin decoradores, con uno o con varios.
+Cada decorador obtiene la cotización interior con `super.quote()` (que delega en `wrapped.quote()`) y devuelve una nueva `Quote`. No altera el componente envuelto. `Quote` y sus listas son inmutables. El mismo contrato funciona sin decoradores, con uno o con varios.
 
 ## Reglas del simulador
 
@@ -141,7 +141,7 @@ Las seis pruebas cubren costos base, acumulación, seguro mínimo, efectos del o
 
 ## Extender el caso
 
-Para incorporar un servicio nuevo, crea una clase que extienda `ShipmentDecorator`, delegue en `wrapped.quote()` y devuelva una cotización enriquecida. Registra su metadata en `QuoteService.CATALOG` y su constructor en la composición de `QuoteService.calculate()`. La vista Thymeleaf genera las opciones desde ese catálogo. Si requiere parámetros adicionales, amplía el contexto/DTO y el formulario.
+Para incorporar un servicio nuevo, crea una clase que extienda `ShipmentDecorator`, sobrescriba `quote()` partiendo de `super.quote()` y devuelva una cotización enriquecida. Registra su metadata en `QuoteService.CATALOG` y su constructor en la composición de `QuoteService.calculate()`. La vista Thymeleaf genera las opciones desde ese catálogo. Si requiere parámetros adicionales, amplía el contexto/DTO y el formulario.
 
 Esta versión permite cada decorador una vez por envío, usa cuatro ciudades y no persiste cotizaciones en un servidor. La descarga JSON es la forma de conservar el resultado. Puedes sustituir las tarifas sintéticas por un catálogo real e introducir persistencia sin cambiar el contrato `Shipment`.
 
