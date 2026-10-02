@@ -79,6 +79,18 @@ La aplicación no guarda estado ni usa base de datos, así que se despliega como
 
    Para publicar cambios: `./scripts/package-eb.sh && eb deploy`. Para dejar de pagar al terminar: `eb terminate decorator-lab-env`.
 
+4. **Opción CloudFormation (infraestructura como código):** `deploy/elastic-beanstalk/cloudformation.yaml` crea los roles de servicio y de instancia, la aplicación, la versión y un entorno de instancia única. Sube el zip a S3 y crea el stack:
+
+   ```sh
+   aws s3 cp target/decorator-lab-eb.zip s3://<bucket>/decorator-lab/decorator-lab-eb.zip
+   aws cloudformation deploy --stack-name decorator-lab --capabilities CAPABILITY_IAM \
+     --template-file deploy/elastic-beanstalk/cloudformation.yaml \
+     --parameter-overrides SourceBucket=<bucket> SourceKey=decorator-lab/decorator-lab-eb.zip
+   aws cloudformation describe-stacks --stack-name decorator-lab --query "Stacks[0].Outputs"
+   ```
+
+   La salida `Url` es la dirección pública (`http://celsius-decorator-lab.us-east-1.elasticbeanstalk.com` por defecto). Para nuevas versiones, sube otro zip con otra clave y vuelve a ejecutar `deploy` con el nuevo `SourceKey`. Para eliminarlo todo: `aws cloudformation delete-stack --stack-name decorator-lab`.
+
 Comprueba el nombre exacto de la plataforma con `eb platform list` si `corretto-21` no aparece. Un **502 Bad Gateway** casi siempre indica que la aplicación no escucha en el puerto 5000; revisa los registros con `eb logs`.
 
 ## Recorrido de uso
@@ -210,7 +222,7 @@ PATRON DECORATOR/
 │   ├── NUEVA_FUNCION.md        Perfil térmico y comparación de destinos
 │   ├── GUIA_EXPOSICION.md      Guion y demostraciones para el taller
 │   └── VALIDACION.md           Evidencia de compilación y comprobaciones
-├── deploy/elastic-beanstalk/  Procfile para AWS Elastic Beanstalk
+├── deploy/elastic-beanstalk/  Procfile y plantilla CloudFormation para AWS Elastic Beanstalk
 ├── scripts/                   Inicio en terminal, macOS y paquete para Beanstalk
 ├── src/main/java/com/celsius/
 │   ├── domain/                Contrato, base y valores inmutables
@@ -238,7 +250,7 @@ PATRON DECORATOR/
 mvn test
 ```
 
-Las seis pruebas cubren costos base, acumulación, seguro mínimo, efectos del orden, validaciones e inmutabilidad. Los detalles y comprobaciones del frontend están en [docs/VALIDACION.md](docs/VALIDACION.md).
+Las 26 pruebas cubren costos base, acumulación, seguro mínimo, efectos del orden, validaciones e inmutabilidad (`QuoteServiceTest`), las propiedades de Decorator (`ShipmentDecoratorTest`), Builder (`ShipmentBuilderTest`), Abstract Factory (`CargoProfileFactoryTest`) y Prototype (`ShipmentTemplateTest`). Los detalles y comprobaciones del frontend están en [docs/VALIDACION.md](docs/VALIDACION.md).
 
 ## Extender el caso
 
