@@ -1,13 +1,17 @@
 package com.celsius.domain.decorator;
 
 import com.celsius.domain.*;
-import java.math.BigDecimal;
+import com.celsius.domain.profile.TemperatureSensor;
 
+/** Añade el sensor que entrega la fábrica del perfil de carga (Abstract Factory). */
 public final class TemperatureMonitorDecorator extends ShipmentDecorator {
-    public TemperatureMonitorDecorator(Shipment wrapped) { super(wrapped); }
+    private final TemperatureSensor sensor;
+    public TemperatureMonitorDecorator(Shipment wrapped, TemperatureSensor sensor) {
+        super(wrapped); this.sensor = java.util.Objects.requireNonNull(sensor);
+    }
     @Override public Quote quote() {
         Quote inner = super.quote();
-        return inner.wrap(new QuoteLine("monitor", "Registro de temperatura", name(), "Registrador de datos por envío", new BigDecimal("12000")),
-                "Registro de temperatura durante el trayecto", inner.deliveryHours(), name());
+        return inner.wrap(new QuoteLine("monitor", sensor.name(), name(), sensor.description(), sensor.fee()),
+                sensor.capability(), inner.deliveryHours(), name(), "profile.createSensor()");
     }
 }

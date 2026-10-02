@@ -2,6 +2,8 @@ package com.celsius.domain.builder;
 
 import com.celsius.domain.*;
 import com.celsius.domain.decorator.*;
+import com.celsius.domain.profile.CargoProfileFactory;
+import com.celsius.domain.profile.CargoProfiles;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -10,19 +12,24 @@ import java.util.function.UnaryOperator;
 /**
  * Builder (ConcreteBuilder): arma paso a paso el producto Shipment. Parte del StandardShipment y cada paso
  * envuelve el resultado anterior con un decorador, en el orden en que se invoca. build() entrega el producto.
+ * El empaque y el sensor salen de la fábrica del perfil de carga, así siempre pertenecen a la misma familia.
  */
 public final class ShipmentBuilder {
     private final ShipmentContext context;
+    private final CargoProfileFactory profile;
     private final Set<String> added = new HashSet<>();
     private Shipment shipment;
 
-    public ShipmentBuilder(ShipmentContext context) {
+    public ShipmentBuilder(ShipmentContext context) { this(context, CargoProfiles.DEFAULT); }
+
+    public ShipmentBuilder(ShipmentContext context, CargoProfileFactory profile) {
         this.context = Objects.requireNonNull(context);
+        this.profile = Objects.requireNonNull(profile);
         this.shipment = new StandardShipment(context);
     }
 
-    public ShipmentBuilder coldChain() { return layer("cold", inner -> new ColdChainDecorator(inner, context.weightKg())); }
-    public ShipmentBuilder temperatureMonitor() { return layer("monitor", TemperatureMonitorDecorator::new); }
+    public ShipmentBuilder coldChain() { return layer("cold", inner -> new ColdChainDecorator(inner, profile.createPackaging(), context.weightKg())); }
+    public ShipmentBuilder temperatureMonitor() { return layer("monitor", inner -> new TemperatureMonitorDecorator(inner, profile.createSensor())); }
     public ShipmentBuilder custody() { return layer("custody", CustodyDecorator::new); }
     public ShipmentBuilder insurance() { return layer("insurance", inner -> new InsuranceDecorator(inner, context.declaredValue())); }
     public ShipmentBuilder priority() { return layer("priority", PriorityDecorator::new); }

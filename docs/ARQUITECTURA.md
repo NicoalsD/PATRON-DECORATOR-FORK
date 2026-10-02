@@ -32,6 +32,10 @@ Los decoradores comparten `ShipmentDecorator.wrapped`. La clase abstracta implem
 
 Devuelve una lista de objetos con `id`, `name`, `className`, `description`, `rate` y `code`. IDs válidos: `cold`, `monitor`, `custody`, `insurance`, `priority`.
 
+### GET `/api/profiles`
+
+Devuelve los perfiles térmicos (`id`, `name`, `temperatureRange`, `packagingRate`, `sensorRate`). IDs válidos: `refrigerated`, `frozen`, `ambient`. Cada uno corresponde a una fábrica concreta de `CargoProfileFactory` (Abstract Factory).
+
 ### POST `/api/quotes`
 
 ```json
@@ -40,11 +44,12 @@ Devuelve una lista de objetos con `id`, `name`, `className`, `description`, `rat
   "destination": "Medellín",
   "weightKg": 2,
   "declaredValue": 1500000,
-  "services": ["insurance", "priority"]
+  "services": ["insurance", "priority"],
+  "profile": "refrigerated"
 }
 ```
 
-La respuesta contiene `shipment`, `base`, `decorated` y `disclaimer`. Cada cotización incluye `total`, `deliveryHours`, `lines`, `capabilities` y `expression`. El ejemplo retorna un total decorado de **65280** y **36 horas**, frente a una base de **36400**.
+`profile` es opcional (por defecto `refrigerated`); un perfil desconocido retorna 400. La respuesta contiene `shipment`, `profile`, `base`, `decorated` y `disclaimer`. Cada cotización incluye `total`, `deliveryHours`, `lines`, `capabilities` y `expression`. El ejemplo retorna un total decorado de **65280** y **36 horas**, frente a una base de **36400**.
 
 La lista de servicios se procesa de izquierda a derecha: cada nuevo decorador contiene al anterior. La lista vacía produce un transporte sin extras. Se rechazan servicios desconocidos y duplicados. Una lista omitida/nula se trata como vacía.
 
@@ -56,7 +61,7 @@ Errores de validación y JSON ilegible retornan HTTP 400:
 
 ### GET `/api/quotes/export`
 
-Recibe `origin`, `destination`, `weightKg`, `declaredValue` y parámetros `services` repetidos en el orden de composición. Usa el mismo servicio de Java que la cotización y entrega JSON con `Content-Disposition: attachment; filename="celsius-cotizacion.json"`.
+Recibe `origin`, `destination`, `weightKg`, `declaredValue`, `profile` opcional y parámetros `services` repetidos en el orden de composición. Usa el mismo servicio de Java que la cotización y entrega JSON con `Content-Disposition: attachment; filename="celsius-cotizacion.json"`.
 
 La descarga del frontend envía los datos de la última cotización válida a este endpoint. Una modificación del formulario desactiva la descarga hasta recalcular.
 

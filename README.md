@@ -131,6 +131,26 @@ Shipment shipment = new ShipmentBuilder(context).insurance().priority().build();
 
 El orden de los pasos es el orden de composición: el ejemplo produce `new PriorityDecorator(new InsuranceDecorator(...))`.
 
+### Abstract Factory: perfil térmico de la carga
+
+Nueva función: el usuario elige el **perfil térmico** de la carga. Cada perfil es una fábrica que crea una familia compatible de empaque y sensor; así nunca se combina un empaque con hielo seco con un indicador de ambiente.
+
+| Rol | Implementación |
+|---|---|
+| AbstractFactory | `domain/profile/CargoProfileFactory` (`createPackaging()`, `createSensor()`) |
+| ConcreteFactory | `RefrigeratedProfileFactory` (2–8 °C), `FrozenProfileFactory` (−25 a −15 °C), `ControlledRoomProfileFactory` (15–25 °C) |
+| AbstractProduct | `Packaging`, `TemperatureSensor` |
+| ConcreteProduct | `RefrigeratedPackaging`, `FrozenPackaging`, `ControlledRoomPackaging`; `DataLoggerSensor`, `CryogenicSensor`, `ExposureIndicatorSensor` |
+| Cliente | `ShipmentBuilder`: pasa los productos a `ColdChainDecorator` y `TemperatureMonitorDecorator` |
+
+| Perfil (`profile`) | Empaque | Sensor |
+|---|---|---|
+| `refrigerated` (por defecto) | $24.000 + $1.800/kg | $12.000 |
+| `frozen` | $38.000 + $3.500/kg | $20.000 |
+| `ambient` | $9.000 + $600/kg | $7.000 |
+
+`CargoProfiles.byId()` elige la fábrica; sin perfil se usa `refrigerated`, que conserva las tarifas originales.
+
 ## Reglas del simulador
 
 Todos los importes se redondean a pesos COP con `HALF_UP`, usando `BigDecimal`.
@@ -175,7 +195,8 @@ PATRON DECORATOR/
 ├── src/main/java/com/celsius/
 │   ├── domain/                Contrato, base y valores inmutables
 │   │   ├── decorator/         Decorador abstracto y cinco concretos
-│   │   └── builder/           Builder y Director del envío compuesto
+│   │   ├── builder/           Builder y Director del envío compuesto
+│   │   └── profile/           Abstract Factory de perfiles térmicos
 │   ├── application/           Catálogo, DTOs y composición
 │   └── web/                   Controladores MVC/REST y errores
 ├── src/main/resources/

@@ -21,7 +21,7 @@ class QuoteServiceTest {
         assertThat(result.decorated().total()).isEqualByComparingTo("76000");
         assertThat(result.base().total()).isEqualByComparingTo("36400");
         assertThat(result.decorated().capabilities()).hasSize(3);
-        assertThat(result.decorated().expression()).isEqualTo("new TemperatureMonitorDecorator(new ColdChainDecorator(new StandardShipment(context), context.weightKg()))");
+        assertThat(result.decorated().expression()).isEqualTo("new TemperatureMonitorDecorator(new ColdChainDecorator(new StandardShipment(context), profile.createPackaging(), context.weightKg()), profile.createSensor())");
     }
     @Test void priorityUsesTheInteriorSubtotalSoOrderChangesPrice() {
         var insuranceFirst = service.calculate(request(List.of("insurance", "priority"))).decorated();

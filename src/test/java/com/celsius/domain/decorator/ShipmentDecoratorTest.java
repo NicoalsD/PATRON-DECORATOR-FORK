@@ -1,6 +1,7 @@
 package com.celsius.domain.decorator;
 
 import com.celsius.domain.*;
+import com.celsius.domain.profile.*;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
@@ -28,16 +29,16 @@ class ShipmentDecoratorTest {
     }
     @Test void eachDecoratorAddsExactlyItsOwnLineOnTopOfTheInteriorQuote() {
         Quote inner = base.quote();
-        Quote outer = new TemperatureMonitorDecorator(base).quote();
+        Quote outer = new TemperatureMonitorDecorator(base, new DataLoggerSensor()).quote();
         assertThat(outer.lines()).hasSize(inner.lines().size() + 1).startsWith(inner.lines().toArray(QuoteLine[]::new));
         assertThat(outer.total()).isEqualByComparingTo(inner.total().add(new BigDecimal("12000")));
         assertThat(outer.lines().getLast().className()).isEqualTo("TemperatureMonitorDecorator");
     }
     @Test void decoratorsCanWrapOtherDecoratorsRecursively() {
-        Shipment chain = new CustodyDecorator(new TemperatureMonitorDecorator(new ColdChainDecorator(base, context.weightKg())));
+        Shipment chain = new CustodyDecorator(new TemperatureMonitorDecorator(new ColdChainDecorator(base, new RefrigeratedPackaging(), context.weightKg()), new DataLoggerSensor()));
         assertThat(chain.quote().lines()).extracting(QuoteLine::id).containsExactly("base", "cold", "monitor", "custody");
         assertThat(chain.quote().expression())
-            .isEqualTo("new CustodyDecorator(new TemperatureMonitorDecorator(new ColdChainDecorator(new StandardShipment(context), context.weightKg())))");
+            .isEqualTo("new CustodyDecorator(new TemperatureMonitorDecorator(new ColdChainDecorator(new StandardShipment(context), profile.createPackaging(), context.weightKg()), profile.createSensor()))");
     }
     @Test void priorityReducesDeliveryTimeButNeverBelowItsFloor() {
         Shipment twice = new PriorityDecorator(new PriorityDecorator(new PriorityDecorator(base)));

@@ -13,7 +13,7 @@ function node(tag, text, className) { const e=document.createElement(tag); if(te
 function arrow(up) { const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 20 20');svg.setAttribute('aria-hidden','true');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',up?'M10 16V4m-5 5 5-5 5 5':'M10 4v12m-5-5 5 5 5-5');svg.append(p);return svg; }
 function expression() {
   let result='new StandardShipment(context)';
-  for(const id of selected) result=`new ${classNames[id]}(${result}${id==='cold'?', context.weightKg()':id==='insurance'?', context.declaredValue()':''})`;
+  for(const id of selected) result=`new ${classNames[id]}(${result}${id==='cold'?', profile.createPackaging(), context.weightKg()':id==='monitor'?', profile.createSensor()':id==='insurance'?', context.declaredValue()':''})`;
   return result;
 }
 function renderLayers() {
@@ -30,6 +30,11 @@ function renderLayers() {
   });
   $('java-expression').textContent=(!dirty&&latest?latest.decorated.expression:expression()).replaceAll('(new', '(' + String.fromCharCode(10) + '  new');
 }
+function applyProfileRates() {
+  const profile=$('profile').selectedOptions[0];if(!profile)return;
+  const rates={cold:profile.dataset.packagingRate,monitor:profile.dataset.sensorRate};
+  Object.entries(rates).forEach(([id,rate])=>{const option=form.querySelector(`input[name=services][value=${id}]`)?.closest('.service-option');if(option&&rate)option.querySelector('.service-rate').textContent=rate;});
+}
 function changed() {
   dirty=true;$('download').disabled=true;$('print').disabled=true;$('quote-status').textContent=latest?'Cambios pendientes · vuelve a calcular':'Listo para calcular';$('quote-status').classList.add('dirty');$('form-error').hidden=true;renderLayers();
 }
@@ -43,7 +48,7 @@ function showResult(data) {
 async function calculate(event) {
   event?.preventDefault();if(busy||!form.reportValidity())return;
   busy=true;$('quick-calculate').disabled=true;form.querySelectorAll('input,select,button').forEach(el=>el.disabled=true);$('calculate').textContent='Calculando en Java…';$('form-error').hidden=true;$('quote-status').textContent='Calculando la composición…';renderLayers();
-  const request={origin:$('origin').value,destination:$('destination').value,weightKg:Number($('weight').value),declaredValue:Number($('value').value),services:[...selected]};
+  const request={origin:$('origin').value,destination:$('destination').value,weightKg:Number($('weight').value),declaredValue:Number($('value').value),services:[...selected],profile:$('profile').value};
   try {
     const response=await fetch('/api/quotes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(10000)});
     const data=await response.json();if(!response.ok)throw new Error(data.message||'La cotización no pudo calcularse. Revisa los datos.');
@@ -54,20 +59,21 @@ async function calculate(event) {
 form.addEventListener('submit',calculate);
 form.addEventListener('change',event=>{
  if(event.target.id==='preset')return;
+ if(event.target.id==='profile')applyProfileRates();
  if(event.target.name==='services'){const id=event.target.value;if(event.target.checked)selected.push(id);else selected.splice(selected.indexOf(id),1);}
  $('preset').value='custom';changed();
 });
 form.addEventListener('input',event=>{if(event.target.type==='number'){$('preset').value='custom';changed();}});
 $('preset').addEventListener('change',()=>{
- const presets={vaccines:{origin:'Bogotá',destination:'Medellín',weight:2,value:1500000,services:['cold','monitor']},lab:{origin:'Cali',destination:'Barranquilla',weight:1.5,value:2500000,services:['cold','monitor','custody','insurance','priority']},base:{origin:'Bogotá',destination:'Cali',weight:3,value:500000,services:[]}};
+ const presets={vaccines:{origin:'Bogotá',destination:'Medellín',weight:2,value:1500000,profile:'refrigerated',services:['cold','monitor']},lab:{origin:'Cali',destination:'Barranquilla',weight:1.5,value:2500000,profile:'frozen',services:['cold','monitor','custody','insurance','priority']},base:{origin:'Bogotá',destination:'Cali',weight:3,value:500000,profile:'refrigerated',services:[]}};
  const preset=presets[$('preset').value];if(!preset)return;
- ['origin','destination','weight','value'].forEach(key=>$(key).value=preset[key]);selected.splice(0,selected.length,...preset.services);form.querySelectorAll('input[name=services]').forEach(input=>input.checked=selected.includes(input.value));changed();calculate();
+ ['origin','destination','weight','value','profile'].forEach(key=>$(key).value=preset[key]);applyProfileRates();selected.splice(0,selected.length,...preset.services);form.querySelectorAll('input[name=services]').forEach(input=>input.checked=selected.includes(input.value));changed();calculate();
 });
 $('download').addEventListener('click',()=>{
  if(dirty||!latest)return;
- const params=new URLSearchParams({origin:latest.shipment.origin,destination:latest.shipment.destination,weightKg:latest.shipment.weightKg,declaredValue:latest.shipment.declaredValue});
+ const params=new URLSearchParams({origin:latest.shipment.origin,destination:latest.shipment.destination,weightKg:latest.shipment.weightKg,declaredValue:latest.shipment.declaredValue,profile:latest.profile.id});
  latest.decorated.lines.filter(line=>line.id!=='base').forEach(line=>params.append('services',line.id));
  window.location.assign('/api/quotes/export?'+params.toString());
 });
 $('print').addEventListener('click',()=>{if(!dirty&&latest)window.print();});
-renderLayers();calculate();
+applyProfileRates();renderLayers();calculate();
