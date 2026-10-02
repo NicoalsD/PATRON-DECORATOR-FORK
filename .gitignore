@@ -5,3 +5,8 @@ target/
 .DS_Store
 .impeccable/questions/
 .impeccable/review/
+
+# Elastic Beanstalk
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

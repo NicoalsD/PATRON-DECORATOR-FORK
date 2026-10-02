@@ -43,6 +43,44 @@ PORT=8081 ./scripts/run.sh
 
 El servidor escucha en `127.0.0.1`. Detén la aplicación con `Ctrl+C` en la terminal que la ejecuta.
 
+## Desplegar en AWS Elastic Beanstalk
+
+La aplicación no guarda estado ni usa base de datos, así que se despliega como un único JAR en la plataforma **Corretto 21 running on 64bit Amazon Linux 2023**. El nginx de Beanstalk recibe el tráfico público y lo reenvía a la aplicación en el puerto 5000 de la misma instancia; por eso `server.address=127.0.0.1` sigue siendo válido.
+
+1. Genera el paquete (compila, ejecuta las pruebas y empaqueta el JAR con `deploy/elastic-beanstalk/Procfile`):
+
+   ```sh
+   ./scripts/package-eb.sh
+   ```
+
+   El resultado es `target/decorator-lab-eb.zip`, con el JAR y el `Procfile` en la raíz. El `Procfile` fija `server.port=5000` y activa la caché de Thymeleaf.
+
+2. **Opción consola:** en Elastic Beanstalk, crea una aplicación y un entorno *Web server*, elige la plataforma Java con Corretto 21, selecciona *Single instance* (suficiente para el taller) y sube `target/decorator-lab-eb.zip` como código de la aplicación.
+
+3. **Opción EB CLI** (`pip install awsebcli`, con credenciales de AWS configuradas):
+
+   ```sh
+   eb init decorator-lab --platform corretto-21 --region us-east-1
+   ```
+
+   Añade el artefacto a `.elasticbeanstalk/config.yml`:
+
+   ```yaml
+   deploy:
+     artifact: target/decorator-lab-eb.zip
+   ```
+
+   Crea el entorno y ábrelo:
+
+   ```sh
+   eb create decorator-lab-env --single --instance_type t3.micro
+   eb open
+   ```
+
+   Para publicar cambios: `./scripts/package-eb.sh && eb deploy`. Para dejar de pagar al terminar: `eb terminate decorator-lab-env`.
+
+Comprueba el nombre exacto de la plataforma con `eb platform list` si `corretto-21` no aparece. Un **502 Bad Gateway** casi siempre indica que la aplicación no escucha en el puerto 5000; revisa los registros con `eb logs`.
+
 ## Recorrido de uso
 
 1. Selecciona un escenario o introduce ciudades, peso y valor declarado.
@@ -113,7 +151,8 @@ PATRON DECORATOR/
 │   ├── ARQUITECTURA.md         Flujo, responsabilidades y API
 │   ├── GUIA_EXPOSICION.md      Guion y demostraciones para el taller
 │   └── VALIDACION.md           Evidencia de compilación y comprobaciones
-├── scripts/                   Inicio en terminal y macOS
+├── deploy/elastic-beanstalk/  Procfile para AWS Elastic Beanstalk
+├── scripts/                   Inicio en terminal, macOS y paquete para Beanstalk
 ├── src/main/java/com/celsius/
 │   ├── domain/                Contrato, base y valores inmutables
 │   │   └── decorator/         Decorador abstracto y cinco concretos
@@ -127,7 +166,7 @@ PATRON DECORATOR/
 └── .impeccable/                Dirección, tokens y revisión visual
 ```
 
-`target/` contiene el JAR y los reportes generados por Maven. No es una carpeta de código fuente.
+`target/` contiene el JAR, los reportes y el zip de despliegue generados por Maven. No es una carpeta de código fuente y no se versiona.
 
 ## API y pruebas
 
