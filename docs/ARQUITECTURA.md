@@ -5,8 +5,8 @@
 ```mermaid
 flowchart LR
     Browser[Frontend Thymeleaf + JS] -->|POST /api/quotes| Controller[QuoteController]
-    Controller --> Service[QuoteService: composición]
-    Service --> Outer[Decorador exterior]
+    Controller --> Service[QuoteService]
+    Service -->|Director + Builder| Outer[Decorador exterior]
     Outer --> Inner[Decoradores interiores]
     Inner --> Base[StandardShipment]
     Base -->|Quote base| Inner
@@ -16,7 +16,7 @@ flowchart LR
     Controller -->|JSON| Browser
 ```
 
-`PageController` sirve `index.html` y el catálogo. `QuoteController` expone los cálculos. `QuoteService` valida la selección y ensambla wrappers. El dominio no depende de Spring y cada servicio concreto se ocupa de su propia regla. `ApiExceptionHandler` convierte entradas inválidas en HTTP 400 con un mensaje utilizable.
+`PageController` sirve `index.html` y el catálogo. `QuoteController` expone los cálculos. `QuoteService` valida la entrada y pide la cadena de wrappers a `ShipmentDirector`, que dirige a `ShipmentBuilder` paso a paso (patrón Builder). El dominio no depende de Spring y cada servicio concreto se ocupa de su propia regla. `ApiExceptionHandler` convierte entradas inválidas en HTTP 400 con un mensaje utilizable.
 
 ## Contratos del dominio
 

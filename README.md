@@ -99,7 +99,7 @@ Los cambios pendientes se señalan y desactivan descarga e impresión hasta reca
 | Concrete Component | `StandardShipment` | Cotiza el transporte interurbano. |
 | Decorator | `ShipmentDecorator` | Implementa `Shipment`, conserva `Shipment wrapped` y delega `quote()` en él por defecto. |
 | Concrete Decorators | Cinco clases en `domain/decorator` | Delegan al componente interior y enriquecen su cotización. |
-| Cliente/composición | `QuoteService` | Construye la cadena según la selección; no calcula recargos. |
+| Cliente/composición | `QuoteService` | Pide la cadena al Director/Builder según la selección; no calcula recargos. |
 
 Ejemplo de código real:
 
@@ -111,6 +111,25 @@ Quote result = shipment.quote();
 ```
 
 Cada decorador obtiene la cotización interior con `super.quote()` (que delega en `wrapped.quote()`) y devuelve una nueva `Quote`. No altera el componente envuelto. `Quote` y sus listas son inmutables. El mismo contrato funciona sin decoradores, con uno o con varios.
+
+## Patrones creacionales
+
+Decorator resuelve *qué* responsabilidades tiene el envío. Los patrones creacionales resuelven *cómo* se crean los objetos que participan en él.
+
+### Builder
+
+| Rol | Implementación | Responsabilidad |
+|---|---|---|
+| Product | `Shipment` | El envío compuesto que se entrega al terminar. |
+| ConcreteBuilder | `domain/builder/ShipmentBuilder` | Parte de `StandardShipment`; cada paso (`coldChain()`, `insurance()`, `priority()`…) envuelve el resultado anterior. Rechaza pasos repetidos. `build()` entrega el producto. |
+| Director | `domain/builder/ShipmentDirector` | `construct()` traduce la selección del usuario en pasos, en orden. `vaccines()` es una receta fija. |
+| Cliente | `QuoteService` | Crea el builder con el contexto y delega la construcción en el Director. |
+
+```java
+Shipment shipment = new ShipmentBuilder(context).insurance().priority().build();
+```
+
+El orden de los pasos es el orden de composición: el ejemplo produce `new PriorityDecorator(new InsuranceDecorator(...))`.
 
 ## Reglas del simulador
 
@@ -155,7 +174,8 @@ PATRON DECORATOR/
 ├── scripts/                   Inicio en terminal, macOS y paquete para Beanstalk
 ├── src/main/java/com/celsius/
 │   ├── domain/                Contrato, base y valores inmutables
-│   │   └── decorator/         Decorador abstracto y cinco concretos
+│   │   ├── decorator/         Decorador abstracto y cinco concretos
+│   │   └── builder/           Builder y Director del envío compuesto
 │   ├── application/           Catálogo, DTOs y composición
 │   └── web/                   Controladores MVC/REST y errores
 ├── src/main/resources/

@@ -1,9 +1,8 @@
 package com.celsius.application;
 
 import com.celsius.domain.*;
-import com.celsius.domain.decorator.*;
+import com.celsius.domain.builder.*;
 import org.springframework.stereotype.Service;
-import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -20,22 +19,8 @@ public class QuoteService {
         if (request == null) throw new IllegalArgumentException("Completa los datos del envío.");
         ShipmentContext context = new ShipmentContext(request.origin(), request.destination(), request.weightKg(), request.declaredValue());
         List<String> selected = request.services() == null ? List.of() : request.services();
-        if (selected.size() > CATALOG.size() || new HashSet<>(selected).size() != selected.size())
-            throw new IllegalArgumentException("Cada servicio se puede añadir una sola vez.");
-        Shipment base = new StandardShipment(context);
-        Shipment shipment = base;
-        // Composition root: cada asignación conserva el objeto anterior como componente interior.
-        for (String id : selected) {
-            if (id == null) throw new IllegalArgumentException("Servicio no reconocido.");
-            shipment = switch (id) {
-                case "cold" -> new ColdChainDecorator(shipment, context.weightKg());
-                case "monitor" -> new TemperatureMonitorDecorator(shipment);
-                case "custody" -> new CustodyDecorator(shipment);
-                case "insurance" -> new InsuranceDecorator(shipment, context.declaredValue());
-                case "priority" -> new PriorityDecorator(shipment);
-                default -> throw new IllegalArgumentException("Servicio no reconocido: " + id);
-            };
-        }
-        return new QuoteResponse(context, base.quote(), shipment.quote(), "Tarifas, plazos y coberturas simulados para un taller académico.");
+        // Director + Builder: cada servicio elegido envuelve al envío anterior, en el orden recibido.
+        Shipment shipment = ShipmentDirector.construct(new ShipmentBuilder(context), selected);
+        return new QuoteResponse(context, new StandardShipment(context).quote(), shipment.quote(), "Tarifas, plazos y coberturas simulados para un taller académico.");
     }
 }
